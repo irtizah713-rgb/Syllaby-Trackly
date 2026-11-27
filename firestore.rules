@@ -249,6 +249,14 @@ service cloud.firestore {
       allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && isValidId(userId) &&
                        incoming().userId == userId &&
+                       incoming().xp == 0 &&
+                       incoming().level == 1 &&
+                       incoming().themePoints == 50 &&
+                       incoming().currentStreak == 0 &&
+                       incoming().longestStreak == 0 &&
+                       incoming().totalFocusMinutes == 0 &&
+                       incoming().selectedFrameId == 'frame_default' &&
+                       incoming().unlockedShopIds == ['frame_default'] &&
                        incoming().keys().hasAll(['userId', 'email', 'displayName', 'xp', 'level', 'themePoints', 'currentStreak', 'longestStreak', 'totalFocusMinutes', 'dailyGoalMinutes', 'selectedFrameId', 'unlockedShopIds', 'createdAt', 'updatedAt']) &&
                        incoming().keys().hasOnly(['userId', 'email', 'displayName', 'photoUrl', 'xp', 'level', 'themePoints', 'currentStreak', 'longestStreak', 'lastActivityDate', 'totalFocusMinutes', 'dailyGoalMinutes', 'academicSession', 'academicClass', 'academicStream', 'bio', 'selectedFrameId', 'unlockedShopIds', 'createdAt', 'updatedAt']) &&
                        isValidUserAccount(incoming());
@@ -399,6 +407,12 @@ service cloud.firestore {
       allow list: if isSignedIn() && (resource.data.discoverable == true || resource.data.userId == request.auth.uid);
       allow create: if isOwner(userId) && isValidId(userId) &&
                        incoming().userId == userId &&
+                       incoming().level == 1 &&
+                       incoming().xp == 0 &&
+                       incoming().rankTitle == 'Initiate' &&
+                       incoming().currentStreak == 0 &&
+                       incoming().totalFocusMinutes == 0 &&
+                       incoming().selectedFrameId == 'frame_default' &&
                        incoming().keys().hasAll(['userId', 'username', 'friendCode', 'level', 'xp', 'rankTitle', 'currentStreak', 'totalFocusMinutes', 'selectedFrameId', 'discoverable', 'showStats', 'showAchievements', 'createdAt', 'updatedAt']) &&
                        incoming().keys().hasOnly(['userId', 'username', 'friendCode', 'bio', 'academicClass', 'academicStream', 'level', 'xp', 'rankTitle', 'currentStreak', 'totalFocusMinutes', 'selectedFrameId', 'discoverable', 'showStats', 'showAchievements', 'createdAt', 'updatedAt']) &&
                        isValidPublicProfile(incoming());
@@ -418,6 +432,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidId(requestId) &&
                        incoming().fromUid == request.auth.uid &&
                        incoming().toUid != request.auth.uid &&
+                       requestId == ('freq_' + incoming().fromUid + '_' + incoming().toUid) &&
                        incoming().status == 'PENDING' &&
                        incoming().keys().hasAll(['fromUid', 'fromUsername', 'fromFriendCode', 'toUid', 'toUsername', 'status', 'createdAt', 'updatedAt']) &&
                        incoming().keys().hasOnly(['fromUid', 'fromUsername', 'fromFriendCode', 'toUid', 'toUsername', 'status', 'createdAt', 'updatedAt']) &&
