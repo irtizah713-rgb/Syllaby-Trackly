@@ -230,7 +230,9 @@ service cloud.firestore {
              data.senderUid is string && data.senderUid.size() >= 1 && data.senderUid.size() <= 128 &&
              data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 60 &&
              data.text is string && data.text.size() >= 1 && data.text.size() <= 500 &&
-             data.expiresAtMillis is int && data.expiresAtMillis > 0 &&
+             data.expiresAtMillis is int &&
+             data.expiresAtMillis >= request.time.toMillis() &&
+             data.expiresAtMillis <= request.time.toMillis() + 604860000 &&
              isValidTimestamp(data.createdAt);
     }
 
