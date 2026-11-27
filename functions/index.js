@@ -12,8 +12,8 @@ const db = getFirestore(getApp(), DATABASE_ID);
 const BATCH_LIMIT = 400;
 
 /**
- * Permanently removes chat messages after their seven-day retention window.
- * Security rules constrain client-created expiry values to the next seven days.
+ * Permanently removes expired study-room messages.
+ * Expiry values are bounded by Firestore rules to the seven-day retention window.
  */
 exports.deleteExpiredRoomMessages = onSchedule(
   {
@@ -26,22 +26,42 @@ exports.deleteExpiredRoomMessages = onSchedule(
   async () => {
     const now = Date.now();
     let deleted = 0;
+    let cursor = null;
 
     while (true) {
-      const snapshot = await db
+      let query = db
         .collectionGroup("messages")
         .where("expiresAtMillis", "<=", now)
         .orderBy("expiresAtMillis", "asc")
-        .limit(BATCH_LIMIT)
-        .get();
+        .limit(BATCH_LIMIT);
 
+      if (cursor) query = query.startAfter(cursor);
+
+      const snapshot = await query.get();
       if (snapshot.empty) break;
 
       const batch = db.batch();
-      snapshot.docs.forEach((doc) => batch.delete(doc.ref));
-      await batch.commit();
-      deleted += snapshot.size;
+      let batchDeletes = 0;
 
+      for (const doc of snapshot.docs) {
+        const segments = doc.ref.path.split("/");
+        // Avoid deleting documents from unrelated future subcollections named "messages".
+        if (
+          segments.length === 4 &&
+          segments[0] === "studyRooms" &&
+          segments[2] === "messages"
+        ) {
+          batch.delete(doc.ref);
+          batchDeletes += 1;
+        }
+      }
+
+      if (batchDeletes > 0) {
+        await batch.commit();
+        deleted += batchDeletes;
+      }
+
+      cursor = snapshot.docs[snapshot.docs.length - 1];
       if (snapshot.size < BATCH_LIMIT) break;
     }
 
