@@ -450,16 +450,15 @@ class SocialRoomsRepository(
     ): Result<Unit> {
         val path = "studyRooms/${room.id}"
         return try {
-            requireUserId()
-            val payload = mutableMapOf<String, Any>(
+            val uid = requireUserId()
+            check(uid == room.hostUid) { "Only the room host can control the study timer." }
+            val payload = mapOf(
                 "timerState" to timerState.name,
+                "timerDurationMinutes" to durationMinutes.coerceIn(1L, 180L),
                 "timerRemainingSeconds" to remainingSeconds.coerceIn(0L, 10800L),
                 "timerUpdatedAtMillis" to System.currentTimeMillis(),
                 "updatedAt" to FieldValue.serverTimestamp()
             )
-            if (auth.currentUser?.uid == room.hostUid) {
-                payload["timerDurationMinutes"] = durationMinutes.coerceIn(1L, 180L)
-            }
             db.collection("studyRooms").document(room.id).update(payload).await()
             Result.success(Unit)
         } catch (e: CancellationException) {
