@@ -124,6 +124,7 @@ test("User account: owner create, partial update, cross-user denial, and PII iso
 test("Public profiles: discoverable query alignment and no cross-user writes", async () => {
   const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
   const bobDb = testEnv.authenticatedContext(BOB_UID).firestore();
+  const charlieDb = testEnv.authenticatedContext(CHARLIE_UID).firestore();
   const past = new Date(Date.now() - 5000);
 
   await assertSucceeds(
@@ -137,6 +138,26 @@ test("Public profiles: discoverable query alignment and no cross-user writes", a
       currentStreak: 0,
       totalFocusMinutes: 0,
       selectedFrameId: "frame_default",
+      discoverable: true,
+      showStats: true,
+      showAchievements: true,
+      createdAt: past,
+      updatedAt: past,
+    })
+  );
+
+  // New public profiles must start with server-expected baseline stats.
+  await assertFails(
+    charlieDb.collection("publicProfiles").doc(CHARLIE_UID).set({
+      userId: CHARLIE_UID,
+      username: "Charlie",
+      friendCode: "ST-CHARLIE",
+      level: 50,
+      xp: 999999,
+      rankTitle: "Grand Sage",
+      currentStreak: 365,
+      totalFocusMinutes: 100000,
+      selectedFrameId: "frame_gold_hourglass",
       discoverable: true,
       showStats: true,
       showAchievements: true,
