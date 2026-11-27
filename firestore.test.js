@@ -415,6 +415,18 @@ test("Study rooms & chat messages: public vs private isolation and text-only enf
     })
   );
 
+  // An existing member can leave a private room even after invite metadata changes.
+  await aliceDb.collection("studyRooms").doc("room_priv").update({
+    invitedUids: [],
+    updatedAt: new Date(Date.now() - 1000),
+  });
+  await assertSucceeds(
+    bobDb.collection("studyRooms").doc("room_priv").update({
+      memberUids: [ALICE_UID],
+      updatedAt: new Date(Date.now() - 1000),
+    })
+  );
+
   // Bob sends text message in public room
   await assertSucceeds(
     bobDb
