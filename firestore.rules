@@ -25,6 +25,20 @@ service cloud.firestore {
       return resource.data;
     }
 
+    function hasAcceptedFriendRequest(userId, friendUid) {
+      return (
+        exists(/databases/$(database)/documents/friendRequests/freq_$(userId)_$(friendUid)) &&
+        get(/databases/$(database)/documents/friendRequests/freq_$(userId)_$(friendUid)).data.fromUid == userId &&
+        get(/databases/$(database)/documents/friendRequests/freq_$(userId)_$(friendUid)).data.toUid == friendUid &&
+        get(/databases/$(database)/documents/friendRequests/freq_$(userId)_$(friendUid)).data.status == 'ACCEPTED'
+      ) || (
+        exists(/databases/$(database)/documents/friendRequests/freq_$(friendUid)_$(userId)) &&
+        get(/databases/$(database)/documents/friendRequests/freq_$(friendUid)_$(userId)).data.fromUid == friendUid &&
+        get(/databases/$(database)/documents/friendRequests/freq_$(friendUid)_$(userId)).data.toUid == userId &&
+        get(/databases/$(database)/documents/friendRequests/freq_$(friendUid)_$(userId)).data.status == 'ACCEPTED'
+      );
+    }
+
     function isValidTimestamp(ts) {
       return ts is timestamp && ts <= request.time;
     }
@@ -213,9 +227,6 @@ service cloud.firestore {
 
     function isValidRoomMessage(data) {
       return data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 128 &&
-             data.roomHostUid is string && data.roomHostUid.size() >= 1 && data.roomHostUid.size() <= 128 &&
-             data.roomPrivacy in ['PUBLIC', 'PRIVATE'] &&
-             isValidStringList(data.roomAllowedUids, 100) &&
              data.senderUid is string && data.senderUid.size() >= 1 && data.senderUid.size() <= 128 &&
              data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 60 &&
              data.text is string && data.text.size() >= 1 && data.text.size() <= 500 &&
@@ -366,6 +377,8 @@ service cloud.firestore {
         allow create: if isOwner(userId) && isValidId(friendUid) &&
                          incoming().userId == userId &&
                          incoming().friendUid == friendUid &&
+                         incoming().relationStatus == 'FRIEND' &&
+                         hasAcceptedFriendRequest(userId, friendUid) &&
                          incoming().keys().hasAll(['userId', 'friendUid', 'friendUsername', 'friendCode', 'relationStatus', 'createdAt', 'updatedAt']) &&
                          incoming().keys().hasOnly(['userId', 'friendUid', 'friendUsername', 'friendCode', 'relationStatus', 'createdAt', 'updatedAt']) &&
                          isValidFriendLink(incoming());
@@ -433,6 +446,9 @@ service cloud.firestore {
                       request.auth.uid in resource.data.invitedUids);
       allow create: if isSignedIn() && isValidId(roomId) &&
                        incoming().hostUid == request.auth.uid &&
+                       incoming().memberUids.size() == 1 &&
+                       incoming().memberUids[0] == request.auth.uid &&
+                       !(request.auth.uid in incoming().invitedUids) &&
                        incoming().keys().hasAll(['hostUid', 'hostName', 'title', 'description', 'environment', 'privacy', 'inviteCode', 'invitedUids', 'memberUids', 'timerState', 'timerDurationMinutes', 'timerRemainingSeconds', 'timerUpdatedAtMillis', 'createdAt', 'updatedAt']) &&
                        incoming().keys().hasOnly(['hostUid', 'hostName', 'title', 'description', 'environment', 'privacy', 'inviteCode', 'invitedUids', 'memberUids', 'timerState', 'timerDurationMinutes', 'timerRemainingSeconds', 'timerUpdatedAtMillis', 'createdAt', 'updatedAt']) &&
                        isValidStudyRoom(incoming());
@@ -479,8 +495,7 @@ service cloud.firestore {
                            request.auth.uid in get(/databases/$(database)/documents/studyRooms/$(roomId)).data.memberUids ||
                            request.auth.uid in get(/databases/$(database)/documents/studyRooms/$(roomId)).data.invitedUids
                          ) &&
-                         incoming().roomHostUid == get(/databases/$(database)/documents/studyRooms/$(roomId)).data.hostUid &&
-                         incoming().roomPrivacy == get(/databases/$(database)/documents/studyRooms/$(roomId)).data.privacy;
+                         incoming().roomId == roomId;
         allow update: if false;
         allow delete: if isSignedIn() && isValidId(roomId) && isValidId(messageId) &&
                          (existing().senderUid == request.auth.uid ||
