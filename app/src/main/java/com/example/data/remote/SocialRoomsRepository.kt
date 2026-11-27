@@ -483,12 +483,8 @@ class SocialRoomsRepository(
         return try {
             val uid = requireUserId()
             check(uid == senderUid)
-            val allowed = (listOf(room.hostUid) + room.memberUids + room.invitedUids).distinct().take(100)
             val payload = mapOf(
                 "roomId" to room.id,
-                "roomHostUid" to room.hostUid,
-                "roomPrivacy" to room.privacy,
-                "roomAllowedUids" to allowed,
                 "senderUid" to uid,
                 "senderName" to senderName.trim().ifBlank { "Student" }.take(60),
                 "text" to cleanText,
