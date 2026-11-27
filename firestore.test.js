@@ -329,6 +329,52 @@ test("Friend requests: creation, acceptance, and unauthorized tampering blocked"
   await assertFails(bobDb.collection("friendRequests").get());
 });
 
+test("Friend links require a matching accepted friend request", async () => {
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
+  const bobDb = testEnv.authenticatedContext(BOB_UID).firestore();
+  const past = new Date(Date.now() - 5000);
+
+  const friendLink = {
+    userId: BOB_UID,
+    friendUid: ALICE_UID,
+    friendUsername: "Alice",
+    friendCode: "ST-ALICE1",
+    relationStatus: "FRIEND",
+    createdAt: past,
+    updatedAt: past,
+  };
+
+  // A user cannot unilaterally add another user as a friend.
+  await assertFails(
+    bobDb.collection("users").doc(BOB_UID).collection("friends").doc(ALICE_UID).set(friendLink)
+  );
+
+  // The target accepts the deterministic friend request.
+  await assertSucceeds(
+    aliceDb.collection("friendRequests").doc(`freq_${BOB_UID}_${ALICE_UID}`).set({
+      fromUid: BOB_UID,
+      fromUsername: "Bob",
+      fromFriendCode: "ST-BOB456",
+      toUid: ALICE_UID,
+      toUsername: "Alice",
+      status: "PENDING",
+      createdAt: past,
+      updatedAt: past,
+    })
+  );
+  await assertSucceeds(
+    aliceDb.collection("friendRequests").doc(`freq_${BOB_UID}_${ALICE_UID}`).update({
+      status: "ACCEPTED",
+      updatedAt: new Date(Date.now() - 1000),
+    })
+  );
+
+  // After acceptance, the sender can create their reciprocal friend link.
+  await assertSucceeds(
+    bobDb.collection("users").doc(BOB_UID).collection("friends").doc(ALICE_UID).set(friendLink)
+  );
+});
+
 test("Study rooms & chat messages: public vs private isolation and text-only enforcement", async () => {
   const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
   const bobDb = testEnv.authenticatedContext(BOB_UID).firestore();
