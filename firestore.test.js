@@ -157,6 +157,14 @@ test("Public profiles: discoverable query alignment and no cross-user writes", a
   // Unfiltered list on publicProfiles fails
   await assertFails(bobDb.collection("publicProfiles").get());
 
+  // A direct document read must also respect discoverability.
+  await aliceDb.collection("publicProfiles").doc(ALICE_UID).update({
+    discoverable: false,
+    updatedAt: new Date(Date.now() - 1000),
+  });
+  await assertFails(bobDb.collection("publicProfiles").doc(ALICE_UID).get());
+  await assertSucceeds(aliceDb.collection("publicProfiles").doc(ALICE_UID).get());
+
   // Bob cannot overwrite Alice's public profile
   await assertFails(
     bobDb.collection("publicProfiles").doc(ALICE_UID).update({
@@ -378,10 +386,31 @@ test("Study rooms & chat messages: public vs private isolation and text-only enf
   await assertFails(charlieDb.collection("studyRooms").doc("room_priv").get());
   await assertSucceeds(bobDb.collection("studyRooms").doc("room_priv").get());
 
-  // Bob joins private room
+  // Bob joins private room because he was invited.
   await assertSucceeds(
     bobDb.collection("studyRooms").doc("room_priv").update({
       memberUids: [ALICE_UID, BOB_UID],
+      updatedAt: new Date(Date.now() - 1000),
+    })
+  );
+
+  // A non-host cannot change the room timer or add another user.
+  await assertFails(
+    bobDb.collection("studyRooms").doc("room_priv").update({
+      timerState: "PAUSED",
+      updatedAt: new Date(Date.now() - 1000),
+    })
+  );
+  await assertFails(
+    bobDb.collection("studyRooms").doc("room_priv").update({
+      memberUids: [ALICE_UID, BOB_UID, CHARLIE_UID],
+      updatedAt: new Date(Date.now() - 1000),
+    })
+  );
+  // An unrelated user cannot join a private room.
+  await assertFails(
+    charlieDb.collection("studyRooms").doc("room_priv").update({
+      memberUids: [ALICE_UID, BOB_UID, CHARLIE_UID],
       updatedAt: new Date(Date.now() - 1000),
     })
   );
