@@ -293,7 +293,7 @@ test("Friend requests: creation, acceptance, and unauthorized tampering blocked"
   const past = new Date(Date.now() - 5000);
 
   await assertSucceeds(
-    aliceDb.collection("friendRequests").doc("req_1").set({
+    aliceDb.collection("friendRequests").doc(`freq_${ALICE_UID}_${BOB_UID}`).set({
       fromUid: ALICE_UID,
       fromUsername: "Alice",
       fromFriendCode: "ST-ALICE1",
@@ -306,9 +306,9 @@ test("Friend requests: creation, acceptance, and unauthorized tampering blocked"
   );
 
   // Charlie cannot read or update Alice->Bob request
-  await assertFails(charlieDb.collection("friendRequests").doc("req_1").get());
+  await assertFails(charlieDb.collection("friendRequests").doc(`freq_${ALICE_UID}_${BOB_UID}`).get());
   await assertFails(
-    charlieDb.collection("friendRequests").doc("req_1").update({
+    charlieDb.collection("friendRequests").doc(`freq_${ALICE_UID}_${BOB_UID}`).update({
       status: "ACCEPTED",
       updatedAt: new Date(Date.now() - 1000),
     })
@@ -316,7 +316,7 @@ test("Friend requests: creation, acceptance, and unauthorized tampering blocked"
 
   // Bob can accept
   await assertSucceeds(
-    bobDb.collection("friendRequests").doc("req_1").update({
+    bobDb.collection("friendRequests").doc(`freq_${ALICE_UID}_${BOB_UID}`).update({
       status: "ACCEPTED",
       updatedAt: new Date(Date.now() - 1000),
     })
