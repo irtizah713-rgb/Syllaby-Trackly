@@ -33,7 +33,7 @@ This repository contains a scheduled Cloud Function that permanently deletes exp
 
 ## Before production
 
-- Run `firebase emulators:exec --only firestore "npm test"` after adding a root test script, or run the existing Firestore test suite with its declared dependencies.
+- From the repository root, run `npm install` followed by `npm test`. The root test script starts the Firestore emulator on the configured port and runs `firestore.test.js`.
 - Run the Android debug build and test the public/private room flows.
 - Verify Cloud Scheduler and Functions logs after deployment.
 - Never commit service-account JSON files, signing keys, OAuth secrets, or local `.env` files.
