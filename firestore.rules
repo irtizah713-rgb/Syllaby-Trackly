@@ -442,7 +442,7 @@ service cloud.firestore {
                        isValidStudyRoom(incoming()) && (
                          (request.auth.uid == existing().hostUid &&
                           incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'environment', 'privacy', 'invitedUids', 'memberUids', 'timerState', 'timerDurationMinutes', 'timerRemainingSeconds', 'timerUpdatedAtMillis', 'updatedAt'])) ||
-                         ((existing().privacy == 'PUBLIC' || request.auth.uid in existing().invitedUids) &&
+                         ((existing().privacy == 'PUBLIC' || request.auth.uid in existing().invitedUids || request.auth.uid in existing().memberUids) &&
                           incoming().diff(existing()).affectedKeys().hasOnly(['memberUids', 'updatedAt']) &&
                           (
                             (incoming().memberUids.size() == existing().memberUids.size() + 1 &&
