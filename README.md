@@ -1,4 +1,16 @@
-SyllabyTrackly
+# SyllabyTrackly
+
+> Your educational experience, Under Control.
+
+## Download Android App
+
+[![Download APK](https://img.shields.io/badge/Download-Android%20APK-2ea44f?style=for-the-badge&logo=android)](https://github.com/irtizah713-rgb/Syllaby-Trackly/releases/latest/download/SyllabyTrackly.apk)
+
+The APK is published automatically when a version tag (for example, `v0.1.0`) is pushed. For development builds, open [Actions → Build Android APK](https://github.com/irtizah713-rgb/Syllaby-Trackly/actions/workflows/android-apk.yml) and download the `SyllabyTrackly-APK` artifact from a successful run.
+
+**Note:** Development builds are debug-signed APKs for testing, not production Play Store releases. Android may ask you to confirm installation from your browser. Only install APKs you trust.
+
+---
 
 Your educational experience, Under Control.
 
