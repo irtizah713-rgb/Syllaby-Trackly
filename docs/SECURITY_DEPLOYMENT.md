@@ -1,5 +1,7 @@
 # Security deployment checklist
 
+The Firestore rules test workflow is required to pass before this branch is considered ready.
+
 This repository contains a scheduled Cloud Function that permanently deletes expired study-room messages.
 
 ## Required deployment steps
