@@ -26,16 +26,18 @@ service cloud.firestore {
     }
 
     function hasAcceptedFriendRequest(userId, friendUid) {
+      let forwardRequestPath = /databases/$(database)/documents/friendRequests/$( 'freq_' + userId + '_' + friendUid );
+      let reverseRequestPath = /databases/$(database)/documents/friendRequests/$( 'freq_' + friendUid + '_' + userId );
       return (
-        exists(/databases/$(database)/documents/friendRequests/freq_$(userId)_$(friendUid)) &&
-        get(/databases/$(database)/documents/friendRequests/freq_$(userId)_$(friendUid)).data.fromUid == userId &&
-        get(/databases/$(database)/documents/friendRequests/freq_$(userId)_$(friendUid)).data.toUid == friendUid &&
-        get(/databases/$(database)/documents/friendRequests/freq_$(userId)_$(friendUid)).data.status == 'ACCEPTED'
+        exists(forwardRequestPath) &&
+        get(forwardRequestPath).data.fromUid == userId &&
+        get(forwardRequestPath).data.toUid == friendUid &&
+        get(forwardRequestPath).data.status == 'ACCEPTED'
       ) || (
-        exists(/databases/$(database)/documents/friendRequests/freq_$(friendUid)_$(userId)) &&
-        get(/databases/$(database)/documents/friendRequests/freq_$(friendUid)_$(userId)).data.fromUid == friendUid &&
-        get(/databases/$(database)/documents/friendRequests/freq_$(friendUid)_$(userId)).data.toUid == userId &&
-        get(/databases/$(database)/documents/friendRequests/freq_$(friendUid)_$(userId)).data.status == 'ACCEPTED'
+        exists(reverseRequestPath) &&
+        get(reverseRequestPath).data.fromUid == friendUid &&
+        get(reverseRequestPath).data.toUid == userId &&
+        get(reverseRequestPath).data.status == 'ACCEPTED'
       );
     }
 
