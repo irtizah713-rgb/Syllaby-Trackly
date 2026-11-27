@@ -487,8 +487,8 @@ service cloud.firestore {
         allow create: if isSignedIn() && isValidId(roomId) && isValidId(messageId) &&
                          incoming().roomId == roomId &&
                          incoming().senderUid == request.auth.uid &&
-                         incoming().keys().hasAll(['roomId', 'roomHostUid', 'roomPrivacy', 'roomAllowedUids', 'senderUid', 'senderName', 'text', 'expiresAtMillis', 'createdAt']) &&
-                         incoming().keys().hasOnly(['roomId', 'roomHostUid', 'roomPrivacy', 'roomAllowedUids', 'senderUid', 'senderName', 'text', 'expiresAtMillis', 'createdAt']) &&
+                         incoming().keys().hasAll(['roomId', 'senderUid', 'senderName', 'text', 'expiresAtMillis', 'createdAt']) &&
+                         incoming().keys().hasOnly(['roomId', 'senderUid', 'senderName', 'text', 'expiresAtMillis', 'createdAt']) &&
                          isValidRoomMessage(incoming()) &&
                          exists(/databases/$(database)/documents/studyRooms/$(roomId)) &&
                          (
