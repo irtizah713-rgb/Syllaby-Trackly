@@ -11,7 +11,7 @@ on:
       - "docs/SECURITY_DEPLOYMENT.md"
       - ".github/workflows/security-rules.yml"
   push:
-    branches: [main]
+    branches: [main, "security/**"]
     paths:
       - "firestore.rules"
       - "firestore.test.js"
