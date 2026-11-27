@@ -161,11 +161,9 @@ class SocialRoomsRepository(
         require(roomId.isNotBlank() && userId.isNotBlank())
         val path = "studyRooms/$roomId/messages"
         val baseCollection = db.collection("studyRooms").document(roomId).collection("messages")
-        val query = if (privacy == RoomPrivacy.PUBLIC) {
-            baseCollection.whereEqualTo("roomPrivacy", RoomPrivacy.PUBLIC.name)
-        } else {
-            baseCollection.whereArrayContains("roomAllowedUids", userId)
-        }
+        // Authorization is enforced against the parent room document by Firestore rules.
+        // Do not filter using client-writable roomPrivacy/roomAllowedUids message fields.
+        val query = baseCollection
         val nowMillis = System.currentTimeMillis()
         emitAll(
             query.snapshots()
