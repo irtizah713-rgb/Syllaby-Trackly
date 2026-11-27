@@ -372,7 +372,7 @@ test("Friend links require a matching accepted friend request", async () => {
 
   // The target accepts the deterministic friend request.
   await assertSucceeds(
-    aliceDb.collection("friendRequests").doc(`freq_${BOB_UID}_${ALICE_UID}`).set({
+    bobDb.collection("friendRequests").doc(`freq_${BOB_UID}_${ALICE_UID}`).set({
       fromUid: BOB_UID,
       fromUsername: "Bob",
       fromFriendCode: "ST-BOB456",
