@@ -499,6 +499,33 @@ test("Study rooms & chat messages: public vs private isolation and text-only enf
       .get()
   );
 
+  // Message documents cannot smuggle client-controlled room access metadata.
+  await assertFails(
+    bobDb.collection("studyRooms").doc("room_pub").collection("messages").doc("msg_spoof").set({
+      roomId: "room_pub",
+      roomHostUid: BOB_UID,
+      roomPrivacy: "PRIVATE",
+      roomAllowedUids: [BOB_UID],
+      senderUid: BOB_UID,
+      senderName: "Bob",
+      text: "Spoofed metadata",
+      expiresAtMillis: Date.now() + 7 * 24 * 3600 * 1000,
+      createdAt: past,
+    })
+  );
+
+  // Clients cannot keep messages alive by choosing an arbitrarily distant expiry.
+  await assertFails(
+    bobDb.collection("studyRooms").doc("room_pub").collection("messages").doc("msg_forever").set({
+      roomId: "room_pub",
+      senderUid: BOB_UID,
+      senderName: "Bob",
+      text: "This should expire within the retention window",
+      expiresAtMillis: Date.now() + 30 * 24 * 3600 * 1000,
+      createdAt: past,
+    })
+  );
+
   // Charlie cannot send message to private room
   await assertFails(
     charlieDb
