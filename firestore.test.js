@@ -436,9 +436,6 @@ test("Study rooms & chat messages: public vs private isolation and text-only enf
       .doc("msg_1")
       .set({
         roomId: "room_pub",
-        roomHostUid: ALICE_UID,
-        roomPrivacy: "PUBLIC",
-        roomAllowedUids: [ALICE_UID],
         senderUid: BOB_UID,
         senderName: "Bob",
         text: "Starting 25m focus now!",
@@ -453,7 +450,6 @@ test("Study rooms & chat messages: public vs private isolation and text-only enf
       .collection("studyRooms")
       .doc("room_pub")
       .collection("messages")
-      .where("roomPrivacy", "==", "PUBLIC")
       .get()
   );
 
@@ -466,9 +462,6 @@ test("Study rooms & chat messages: public vs private isolation and text-only enf
       .doc("msg_hack")
       .set({
         roomId: "room_priv",
-        roomHostUid: ALICE_UID,
-        roomPrivacy: "PRIVATE",
-        roomAllowedUids: [ALICE_UID, BOB_UID],
         senderUid: CHARLIE_UID,
         senderName: "Charlie",
         text: "Intruder!",
