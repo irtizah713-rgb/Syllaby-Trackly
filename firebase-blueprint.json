@@ -1,0 +1,340 @@
+{
+  "entities": {
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "Private owner-only user account with PII, XP, Theme Points, streaks, and academic profile.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "description": "User email address (private)" },
+        "displayName": { "type": "string", "description": "Student display name" },
+        "photoUrl": { "type": "string", "description": "Profile picture URL" },
+        "xp": { "type": "integer", "description": "Total experience points" },
+        "level": { "type": "integer", "description": "Calculated level" },
+        "themePoints": { "type": "integer", "description": "Spendable Theme Points balance" },
+        "currentStreak": { "type": "integer", "description": "Current active study streak in days" },
+        "longestStreak": { "type": "integer", "description": "Longest recorded study streak in days" },
+        "lastActivityDate": { "type": "string", "description": "ISO date yyyy-MM-dd of last meaningful study activity" },
+        "totalFocusMinutes": { "type": "integer", "description": "Total completed Pomodoro focus minutes" },
+        "dailyGoalMinutes": { "type": "integer", "description": "Daily focus goal in minutes" },
+        "academicSession": { "type": "string", "description": "Academic session e.g. 2026-2027" },
+        "academicClass": { "type": "string", "description": "Academic class or grade" },
+        "academicStream": { "type": "string", "description": "Academic stream or major" },
+        "bio": { "type": "string", "description": "Student bio" },
+        "selectedFrameId": { "type": "string", "description": "Equipped profile frame ID" },
+        "unlockedShopIds": { "type": "array", "description": "Unlocked reward shop item IDs" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": ["userId", "email", "displayName", "xp", "level", "themePoints", "currentStreak", "longestStreak", "totalFocusMinutes", "dailyGoalMinutes", "selectedFrameId", "unlockedShopIds", "createdAt", "updatedAt"]
+    },
+    "PublicProfile": {
+      "title": "PublicProfile",
+      "description": "PII-free public student profile for friend discovery and leaderboards/rooms.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "friendCode": { "type": "string" },
+        "bio": { "type": "string" },
+        "academicClass": { "type": "string" },
+        "academicStream": { "type": "string" },
+        "level": { "type": "integer" },
+        "xp": { "type": "integer" },
+        "rankTitle": { "type": "string" },
+        "currentStreak": { "type": "integer" },
+        "totalFocusMinutes": { "type": "integer" },
+        "selectedFrameId": { "type": "string" },
+        "discoverable": { "type": "boolean" },
+        "showStats": { "type": "boolean" },
+        "showAchievements": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "username", "friendCode", "level", "xp", "rankTitle", "currentStreak", "totalFocusMinutes", "selectedFrameId", "discoverable", "showStats", "showAchievements", "createdAt", "updatedAt"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Academic subject belonging to a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "colorHex": { "type": "string" },
+        "iconKey": { "type": "string" },
+        "sortOrder": { "type": "integer" },
+        "examDateMillis": { "type": "integer" },
+        "targetChapters": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "colorHex", "iconKey", "sortOrder", "targetChapters", "createdAt", "updatedAt"]
+    },
+    "Chapter": {
+      "title": "Chapter",
+      "description": "Syllabus chapter under a subject with granular mastery status.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "personalNotes": { "type": "string" },
+        "topicsCsv": { "type": "string" },
+        "status": { "type": "string", "enum": ["INCOMPLETE", "COMPLETED", "REVISED", "PRACTISED", "NUMERICALS_PRACTISED"] },
+        "sortOrder": { "type": "integer" },
+        "completedAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "subjectId", "title", "status", "sortOrder", "createdAt", "updatedAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Academic task with priority, deadline, category, tags, and subject/chapter linkage.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "URGENT"] },
+        "category": { "type": "string" },
+        "tags": { "type": "array" },
+        "subjectId": { "type": "string" },
+        "chapterId": { "type": "string" },
+        "dueAtMillis": { "type": "integer" },
+        "reminderEnabled": { "type": "boolean" },
+        "completed": { "type": "boolean" },
+        "completedAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "priority", "category", "tags", "reminderEnabled", "completed", "createdAt", "updatedAt"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Study note linked optionally to a subject and chapter.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "chapterId": { "type": "string" },
+        "pinned": { "type": "boolean" },
+        "favorite": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "content", "pinned", "favorite", "createdAt", "updatedAt"]
+    },
+    "FocusSession": {
+      "title": "FocusSession",
+      "description": "Completed Pomodoro focus session record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "subjectName": { "type": "string" },
+        "durationMinutes": { "type": "integer" },
+        "breakMinutes": { "type": "integer" },
+        "modeLabel": { "type": "string" },
+        "ambientSound": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "startedAtMillis": { "type": "integer" },
+        "endedAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "durationMinutes", "breakMinutes", "modeLabel", "ambientSound", "completed", "startedAtMillis", "endedAtMillis", "createdAt", "updatedAt"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Daily/subject attendance record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "dateKey": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "status": { "type": "string", "enum": ["PRESENT", "ABSENT", "HOLIDAY"] },
+        "note": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "dateKey", "subjectId", "status", "createdAt", "updatedAt"]
+    },
+    "RewardTransaction": {
+      "title": "RewardTransaction",
+      "description": "Immutable XP or Theme Points ledger transaction.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "currency": { "type": "string", "enum": ["XP", "THEME_POINTS"] },
+        "amount": { "type": "integer" },
+        "reason": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "currency", "amount", "reason", "createdAt"]
+    },
+    "AchievementUnlock": {
+      "title": "AchievementUnlock",
+      "description": "Unlocked achievement badge for a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "achievementKey": { "type": "string" },
+        "title": { "type": "string" },
+        "unlockedAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "achievementKey", "title", "unlockedAtMillis", "createdAt"]
+    },
+    "FriendLink": {
+      "title": "FriendLink",
+      "description": "User's friend or blocked connection.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "friendUid": { "type": "string" },
+        "friendUsername": { "type": "string" },
+        "friendCode": { "type": "string" },
+        "relationStatus": { "type": "string", "enum": ["FRIEND", "BLOCKED"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "friendUid", "friendUsername", "friendCode", "relationStatus", "createdAt", "updatedAt"]
+    },
+    "FriendRequest": {
+      "title": "FriendRequest",
+      "description": "Pending or resolved friend request between two users.",
+      "type": "object",
+      "properties": {
+        "fromUid": { "type": "string" },
+        "fromUsername": { "type": "string" },
+        "fromFriendCode": { "type": "string" },
+        "toUid": { "type": "string" },
+        "toUsername": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "ACCEPTED", "DECLINED"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fromUid", "fromUsername", "fromFriendCode", "toUid", "toUsername", "status", "createdAt", "updatedAt"]
+    },
+    "StudyRoom": {
+      "title": "StudyRoom",
+      "description": "Online collaborative study room with themed environment and shared timer.",
+      "type": "object",
+      "properties": {
+        "hostUid": { "type": "string" },
+        "hostName": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "environment": { "type": "string", "enum": ["FOREST", "LIBRARY", "CLASSROOM"] },
+        "privacy": { "type": "string", "enum": ["PUBLIC", "PRIVATE"] },
+        "inviteCode": { "type": "string" },
+        "invitedUids": { "type": "array" },
+        "memberUids": { "type": "array" },
+        "timerState": { "type": "string", "enum": ["IDLE", "RUNNING", "PAUSED", "BREAK"] },
+        "timerDurationMinutes": { "type": "integer" },
+        "timerRemainingSeconds": { "type": "integer" },
+        "timerUpdatedAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["hostUid", "hostName", "title", "description", "environment", "privacy", "inviteCode", "invitedUids", "memberUids", "timerState", "timerDurationMinutes", "timerRemainingSeconds", "timerUpdatedAtMillis", "createdAt", "updatedAt"]
+    },
+    "RoomMessage": {
+      "title": "RoomMessage",
+      "description": "Text-only study room message with 7-day automatic expiry.",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string" },
+        "roomHostUid": { "type": "string" },
+        "roomPrivacy": { "type": "string", "enum": ["PUBLIC", "PRIVATE"] },
+        "roomAllowedUids": { "type": "array" },
+        "senderUid": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "expiresAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["roomId", "roomHostUid", "roomPrivacy", "roomAllowedUids", "senderUid", "senderName", "text", "expiresAtMillis", "createdAt"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "User-submitted moderation report.",
+      "type": "object",
+      "properties": {
+        "reporterUid": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["USER", "ROOM", "MESSAGE"] },
+        "targetId": { "type": "string" },
+        "reason": { "type": "string" },
+        "details": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["reporterUid", "targetType", "targetId", "reason", "details", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserAccount" },
+      "description": "Owner-only user account document"
+    },
+    "/publicProfiles/{userId}": {
+      "schema": { "$ref": "#/entities/PublicProfile" },
+      "description": "PII-free discoverable student profile"
+    },
+    "/users/{userId}/subjects/{subjectId}": {
+      "schema": { "$ref": "#/entities/Subject" },
+      "description": "User's academic subjects"
+    },
+    "/users/{userId}/chapters/{chapterId}": {
+      "schema": { "$ref": "#/entities/Chapter" },
+      "description": "User's syllabus chapters"
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "User's academic tasks"
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/Note" },
+      "description": "User's study notes"
+    },
+    "/users/{userId}/focusSessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/FocusSession" },
+      "description": "User's completed focus sessions"
+    },
+    "/users/{userId}/attendance/{recordId}": {
+      "schema": { "$ref": "#/entities/AttendanceRecord" },
+      "description": "User's attendance records"
+    },
+    "/users/{userId}/transactions/{txId}": {
+      "schema": { "$ref": "#/entities/RewardTransaction" },
+      "description": "User's XP and Theme Points transactions"
+    },
+    "/users/{userId}/achievements/{achievementId}": {
+      "schema": { "$ref": "#/entities/AchievementUnlock" },
+      "description": "User's unlocked achievements"
+    },
+    "/users/{userId}/friends/{friendUid}": {
+      "schema": { "$ref": "#/entities/FriendLink" },
+      "description": "User's accepted friends and blocked users"
+    },
+    "/friendRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/FriendRequest" },
+      "description": "Friend invitations between students"
+    },
+    "/studyRooms/{roomId}": {
+      "schema": { "$ref": "#/entities/StudyRoom" },
+      "description": "Collaborative online study rooms"
+    },
+    "/studyRooms/{roomId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/RoomMessage" },
+      "description": "Text-only chat messages inside study rooms"
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/Report" },
+      "description": "Abuse and moderation reports"
+    }
+  }
+}

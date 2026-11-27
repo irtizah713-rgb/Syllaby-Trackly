@@ -1,0 +1,6 @@
+{
+  "name": "SyllabyTrackly",
+  "description": "Study Smarter. Track Progress. Stay Consistent. Student productivity, syllabus tracking, Pomodoro focus, gamification, and study rooms.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
