@@ -1,0 +1,40 @@
+name: Security Rules Tests
+
+on:
+  pull_request:
+    paths:
+      - "firestore.rules"
+      - "firestore.test.js"
+      - "firebase.json"
+      - "package.json"
+      - "functions/**"
+      - "docs/SECURITY_DEPLOYMENT.md"
+      - ".github/workflows/security-rules.yml"
+  push:
+    branches: [main, "security/**"]
+    paths:
+      - "firestore.rules"
+      - "firestore.test.js"
+      - "firebase.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/security-rules.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  firestore-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Run Firestore rules tests in emulator
+        run: npm test

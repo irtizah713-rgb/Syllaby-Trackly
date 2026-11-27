@@ -161,11 +161,9 @@ class SocialRoomsRepository(
         require(roomId.isNotBlank() && userId.isNotBlank())
         val path = "studyRooms/$roomId/messages"
         val baseCollection = db.collection("studyRooms").document(roomId).collection("messages")
-        val query = if (privacy == RoomPrivacy.PUBLIC) {
-            baseCollection.whereEqualTo("roomPrivacy", RoomPrivacy.PUBLIC.name)
-        } else {
-            baseCollection.whereArrayContains("roomAllowedUids", userId)
-        }
+        // Authorization is enforced against the parent room document by Firestore rules.
+        // Do not filter using client-writable roomPrivacy/roomAllowedUids message fields.
+        val query = baseCollection
         val nowMillis = System.currentTimeMillis()
         emitAll(
             query.snapshots()
@@ -452,16 +450,15 @@ class SocialRoomsRepository(
     ): Result<Unit> {
         val path = "studyRooms/${room.id}"
         return try {
-            requireUserId()
-            val payload = mutableMapOf<String, Any>(
+            val uid = requireUserId()
+            check(uid == room.hostUid) { "Only the room host can control the study timer." }
+            val payload = mapOf(
                 "timerState" to timerState.name,
+                "timerDurationMinutes" to durationMinutes.coerceIn(1L, 180L),
                 "timerRemainingSeconds" to remainingSeconds.coerceIn(0L, 10800L),
                 "timerUpdatedAtMillis" to System.currentTimeMillis(),
                 "updatedAt" to FieldValue.serverTimestamp()
             )
-            if (auth.currentUser?.uid == room.hostUid) {
-                payload["timerDurationMinutes"] = durationMinutes.coerceIn(1L, 180L)
-            }
             db.collection("studyRooms").document(room.id).update(payload).await()
             Result.success(Unit)
         } catch (e: CancellationException) {
@@ -486,12 +483,8 @@ class SocialRoomsRepository(
         return try {
             val uid = requireUserId()
             check(uid == senderUid)
-            val allowed = (listOf(room.hostUid) + room.memberUids + room.invitedUids).distinct().take(100)
             val payload = mapOf(
                 "roomId" to room.id,
-                "roomHostUid" to room.hostUid,
-                "roomPrivacy" to room.privacy,
-                "roomAllowedUids" to allowed,
                 "senderUid" to uid,
                 "senderName" to senderName.trim().ifBlank { "Student" }.take(60),
                 "text" to cleanText,

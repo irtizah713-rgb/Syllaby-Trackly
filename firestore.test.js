@@ -124,6 +124,7 @@ test("User account: owner create, partial update, cross-user denial, and PII iso
 test("Public profiles: discoverable query alignment and no cross-user writes", async () => {
   const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
   const bobDb = testEnv.authenticatedContext(BOB_UID).firestore();
+  const charlieDb = testEnv.authenticatedContext(CHARLIE_UID).firestore();
   const past = new Date(Date.now() - 5000);
 
   await assertSucceeds(
@@ -131,12 +132,32 @@ test("Public profiles: discoverable query alignment and no cross-user writes", a
       userId: ALICE_UID,
       username: "Alice",
       friendCode: "ST-ALICE1",
-      level: 2,
-      xp: 120,
-      rankTitle: "Scholar",
-      currentStreak: 3,
-      totalFocusMinutes: 75,
+      level: 1,
+      xp: 0,
+      rankTitle: "Initiate",
+      currentStreak: 0,
+      totalFocusMinutes: 0,
       selectedFrameId: "frame_default",
+      discoverable: true,
+      showStats: true,
+      showAchievements: true,
+      createdAt: past,
+      updatedAt: past,
+    })
+  );
+
+  // New public profiles must start with server-expected baseline stats.
+  await assertFails(
+    charlieDb.collection("publicProfiles").doc(CHARLIE_UID).set({
+      userId: CHARLIE_UID,
+      username: "Charlie",
+      friendCode: "ST-CHARLIE",
+      level: 50,
+      xp: 999999,
+      rankTitle: "Grand Sage",
+      currentStreak: 365,
+      totalFocusMinutes: 100000,
+      selectedFrameId: "frame_gold_hourglass",
       discoverable: true,
       showStats: true,
       showAchievements: true,
@@ -156,6 +177,14 @@ test("Public profiles: discoverable query alignment and no cross-user writes", a
 
   // Unfiltered list on publicProfiles fails
   await assertFails(bobDb.collection("publicProfiles").get());
+
+  // A direct document read must also respect discoverability.
+  await aliceDb.collection("publicProfiles").doc(ALICE_UID).update({
+    discoverable: false,
+    updatedAt: new Date(Date.now() - 1000),
+  });
+  await assertFails(bobDb.collection("publicProfiles").doc(ALICE_UID).get());
+  await assertSucceeds(aliceDb.collection("publicProfiles").doc(ALICE_UID).get());
 
   // Bob cannot overwrite Alice's public profile
   await assertFails(
@@ -285,7 +314,7 @@ test("Friend requests: creation, acceptance, and unauthorized tampering blocked"
   const past = new Date(Date.now() - 5000);
 
   await assertSucceeds(
-    aliceDb.collection("friendRequests").doc("req_1").set({
+    aliceDb.collection("friendRequests").doc(`freq_${ALICE_UID}_${BOB_UID}`).set({
       fromUid: ALICE_UID,
       fromUsername: "Alice",
       fromFriendCode: "ST-ALICE1",
@@ -298,9 +327,9 @@ test("Friend requests: creation, acceptance, and unauthorized tampering blocked"
   );
 
   // Charlie cannot read or update Alice->Bob request
-  await assertFails(charlieDb.collection("friendRequests").doc("req_1").get());
+  await assertFails(charlieDb.collection("friendRequests").doc(`freq_${ALICE_UID}_${BOB_UID}`).get());
   await assertFails(
-    charlieDb.collection("friendRequests").doc("req_1").update({
+    charlieDb.collection("friendRequests").doc(`freq_${ALICE_UID}_${BOB_UID}`).update({
       status: "ACCEPTED",
       updatedAt: new Date(Date.now() - 1000),
     })
@@ -308,7 +337,7 @@ test("Friend requests: creation, acceptance, and unauthorized tampering blocked"
 
   // Bob can accept
   await assertSucceeds(
-    bobDb.collection("friendRequests").doc("req_1").update({
+    bobDb.collection("friendRequests").doc(`freq_${ALICE_UID}_${BOB_UID}`).update({
       status: "ACCEPTED",
       updatedAt: new Date(Date.now() - 1000),
     })
@@ -319,6 +348,52 @@ test("Friend requests: creation, acceptance, and unauthorized tampering blocked"
     bobDb.collection("friendRequests").where("toUid", "==", BOB_UID).get()
   );
   await assertFails(bobDb.collection("friendRequests").get());
+});
+
+test("Friend links require a matching accepted friend request", async () => {
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
+  const bobDb = testEnv.authenticatedContext(BOB_UID).firestore();
+  const past = new Date(Date.now() - 5000);
+
+  const friendLink = {
+    userId: BOB_UID,
+    friendUid: ALICE_UID,
+    friendUsername: "Alice",
+    friendCode: "ST-ALICE1",
+    relationStatus: "FRIEND",
+    createdAt: past,
+    updatedAt: past,
+  };
+
+  // A user cannot unilaterally add another user as a friend.
+  await assertFails(
+    bobDb.collection("users").doc(BOB_UID).collection("friends").doc(ALICE_UID).set(friendLink)
+  );
+
+  // The target accepts the deterministic friend request.
+  await assertSucceeds(
+    bobDb.collection("friendRequests").doc(`freq_${BOB_UID}_${ALICE_UID}`).set({
+      fromUid: BOB_UID,
+      fromUsername: "Bob",
+      fromFriendCode: "ST-BOB456",
+      toUid: ALICE_UID,
+      toUsername: "Alice",
+      status: "PENDING",
+      createdAt: past,
+      updatedAt: past,
+    })
+  );
+  await assertSucceeds(
+    aliceDb.collection("friendRequests").doc(`freq_${BOB_UID}_${ALICE_UID}`).update({
+      status: "ACCEPTED",
+      updatedAt: new Date(Date.now() - 1000),
+    })
+  );
+
+  // After acceptance, the sender can create their reciprocal friend link.
+  await assertSucceeds(
+    bobDb.collection("users").doc(BOB_UID).collection("friends").doc(ALICE_UID).set(friendLink)
+  );
 });
 
 test("Study rooms & chat messages: public vs private isolation and text-only enforcement", async () => {
@@ -378,10 +453,43 @@ test("Study rooms & chat messages: public vs private isolation and text-only enf
   await assertFails(charlieDb.collection("studyRooms").doc("room_priv").get());
   await assertSucceeds(bobDb.collection("studyRooms").doc("room_priv").get());
 
-  // Bob joins private room
+  // Bob joins private room because he was invited.
   await assertSucceeds(
     bobDb.collection("studyRooms").doc("room_priv").update({
       memberUids: [ALICE_UID, BOB_UID],
+      updatedAt: new Date(Date.now() - 1000),
+    })
+  );
+
+  // A non-host cannot change the room timer or add another user.
+  await assertFails(
+    bobDb.collection("studyRooms").doc("room_priv").update({
+      timerState: "PAUSED",
+      updatedAt: new Date(Date.now() - 1000),
+    })
+  );
+  await assertFails(
+    bobDb.collection("studyRooms").doc("room_priv").update({
+      memberUids: [ALICE_UID, BOB_UID, CHARLIE_UID],
+      updatedAt: new Date(Date.now() - 1000),
+    })
+  );
+  // An unrelated user cannot join a private room.
+  await assertFails(
+    charlieDb.collection("studyRooms").doc("room_priv").update({
+      memberUids: [ALICE_UID, BOB_UID, CHARLIE_UID],
+      updatedAt: new Date(Date.now() - 1000),
+    })
+  );
+
+  // An existing member can leave a private room even after invite metadata changes.
+  await aliceDb.collection("studyRooms").doc("room_priv").update({
+    invitedUids: [],
+    updatedAt: new Date(Date.now() - 1000),
+  });
+  await assertSucceeds(
+    bobDb.collection("studyRooms").doc("room_priv").update({
+      memberUids: [ALICE_UID],
       updatedAt: new Date(Date.now() - 1000),
     })
   );
@@ -395,9 +503,6 @@ test("Study rooms & chat messages: public vs private isolation and text-only enf
       .doc("msg_1")
       .set({
         roomId: "room_pub",
-        roomHostUid: ALICE_UID,
-        roomPrivacy: "PUBLIC",
-        roomAllowedUids: [ALICE_UID],
         senderUid: BOB_UID,
         senderName: "Bob",
         text: "Starting 25m focus now!",
@@ -412,8 +517,34 @@ test("Study rooms & chat messages: public vs private isolation and text-only enf
       .collection("studyRooms")
       .doc("room_pub")
       .collection("messages")
-      .where("roomPrivacy", "==", "PUBLIC")
       .get()
+  );
+
+  // Message documents cannot smuggle client-controlled room access metadata.
+  await assertFails(
+    bobDb.collection("studyRooms").doc("room_pub").collection("messages").doc("msg_spoof").set({
+      roomId: "room_pub",
+      roomHostUid: BOB_UID,
+      roomPrivacy: "PRIVATE",
+      roomAllowedUids: [BOB_UID],
+      senderUid: BOB_UID,
+      senderName: "Bob",
+      text: "Spoofed metadata",
+      expiresAtMillis: Date.now() + 7 * 24 * 3600 * 1000,
+      createdAt: past,
+    })
+  );
+
+  // Clients cannot keep messages alive by choosing an arbitrarily distant expiry.
+  await assertFails(
+    bobDb.collection("studyRooms").doc("room_pub").collection("messages").doc("msg_forever").set({
+      roomId: "room_pub",
+      senderUid: BOB_UID,
+      senderName: "Bob",
+      text: "This should expire within the retention window",
+      expiresAtMillis: Date.now() + 30 * 24 * 3600 * 1000,
+      createdAt: past,
+    })
   );
 
   // Charlie cannot send message to private room
@@ -425,9 +556,6 @@ test("Study rooms & chat messages: public vs private isolation and text-only enf
       .doc("msg_hack")
       .set({
         roomId: "room_priv",
-        roomHostUid: ALICE_UID,
-        roomPrivacy: "PRIVATE",
-        roomAllowedUids: [ALICE_UID, BOB_UID],
         senderUid: CHARLIE_UID,
         senderName: "Charlie",
         text: "Intruder!",
