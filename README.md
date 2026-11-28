@@ -1,10 +1,10 @@
-# SyllabyTrackly
+ Studly
 
 [![Download APK](https://img.shields.io/badge/Download-Android%20APK-2ea44f?style=for-the-badge&logo=android)](https://github.com/irtizah713-rgb/Syllaby-Trackly/releases/latest/download/SyllabyTrackly.2.apk)
 
 **[⬇️ Download the latest Android APK](https://github.com/irtizah713-rgb/Syllaby-Trackly/releases/latest/download/SyllabyTrackly.2.apk)**
 
-SyllabyTrackly
+Studly
 
 Your educational experience, Under Control.
 
@@ -133,7 +133,7 @@ Allow students to control their own data.
 Include privacy-aware community functionality.
 Status
 In development
-As SyllabyTrackly continues to develop, functionality, architecture and implementation may alter.
+As Studly continues to develop, functionality, architecture and implementation may alter.
 Developer
 This was self initiated and self led in order to develop a student productivity digital hub.
 Project Title – SyllabyTrackly
