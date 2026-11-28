@@ -1,10 +1,8 @@
 # SyllabyTrackly
 
-[![Download APK](https://img.shields.io/badge/Download-Android%20APK-2ea44f?style=for-the-badge&logo=android)](https://github.com/irtizah713-rgb/Syllaby-Trackly/releases/latest/download/SyllabyTrackly.apk)
+[![Download APK](https://img.shields.io/badge/Download-Android%20APK-2ea44f?style=for-the-badge&logo=android)](https://github.com/irtizah713-rgb/Syllaby-Trackly/releases/latest/download/SyllabyTrackly.2.apk)
 
-**[⬇️ Download the latest Android APK](https://github.com/irtizah713-rgb/Syllaby-Trackly/releases/latest/download/SyllabyTrackly.apk)**
-
-> The direct download becomes available after the first signed APK is published in GitHub Releases. If no release exists yet, this link will not have a file to download.
+**[⬇️ Download the latest Android APK](https://github.com/irtizah713-rgb/Syllaby-Trackly/releases/latest/download/SyllabyTrackly.2.apk)**
 
 SyllabyTrackly
 
@@ -126,7 +124,6 @@ Development Plan
 [ ] Testing
 [ ] Deployment
 Privacy & Security
-
 SyllabyTrackly intends to:
 Ensure secure authentication.
 Ensure student data confidentiality.
