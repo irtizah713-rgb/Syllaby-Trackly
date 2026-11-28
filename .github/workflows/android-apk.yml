@@ -1,0 +1,168 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "security/**"]
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug:
+    name: Test and build debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
+
+      - name: Prepare Firebase configuration
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES_JSON is not set. Firebase sign-in/cloud services may not work at runtime."
+          fi
+
+      - name: Prepare debug signing key
+        run: |
+          if [ ! -f debug.keystore ]; then
+            keytool -genkeypair -noprompt \
+              -keystore debug.keystore -storepass android \
+              -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Run unit tests and build debug APK
+        run: gradle --no-daemon testDebugUnitTest assembleDebug
+
+      - name: Prepare debug APK and checksum
+        run: |
+          mkdir -p release
+          cp app/build/outputs/apk/debug/app-debug.apk release/SyllabyTrackly-debug.apk
+          cd release
+          sha256sum SyllabyTrackly-debug.apk > SyllabyTrackly-debug-SHA256SUMS.txt
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SyllabyTrackly-debug-APK
+          path: |
+            release/SyllabyTrackly-debug.apk
+            release/SyllabyTrackly-debug-SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
+  build-release:
+    name: Build signed release APK
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
+
+      - name: Prepare Firebase configuration
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES_JSON is not set. Firebase sign-in/cloud services may not work at runtime."
+          fi
+
+      - name: Validate and prepare release signing key
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$RELEASE_KEYSTORE_BASE64" ] || [ -z "${{ secrets.RELEASE_STORE_PASSWORD }}" ] || [ -z "${{ secrets.RELEASE_KEY_PASSWORD }}" ]; then
+            echo "::error::Add RELEASE_KEYSTORE_BASE64, RELEASE_STORE_PASSWORD, and RELEASE_KEY_PASSWORD repository secrets before creating a version tag."
+            exit 1
+          fi
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/my-upload-key.jks"
+          test -s "$GITHUB_WORKSPACE/my-upload-key.jks"
+
+      - name: Build signed release APK
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: gradle --no-daemon assembleRelease
+
+      - name: Prepare release APK and checksum
+        run: |
+          mkdir -p release
+          cp app/build/outputs/apk/release/app-release.apk release/SyllabyTrackly.apk
+          cd release
+          sha256sum SyllabyTrackly.apk > SHA256SUMS.txt
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SyllabyTrackly-release-APK
+          path: |
+            release/SyllabyTrackly.apk
+            release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: SyllabyTrackly-release-APK
+          path: release
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: SyllabyTrackly ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            release/SyllabyTrackly.apk
+            release/SHA256SUMS.txt
